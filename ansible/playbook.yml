@@ -1,0 +1,71 @@
+# Hands on exercise – Code refactoring / explaination​
+---
+- name: Comprehensive Server Setup and Deployment
+  hosts: all
+  become: true
+
+  vars:
+    app_name: my_app
+    app_repo: https://github.com/user/my_app.git
+    app_dir: /var/www/my_app
+
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install necessary packages
+      apt:
+        name:
+          - git
+          - nginx
+          - nodejs
+          - npm
+        state: present
+
+    - name: Clone the application repository
+      git:
+        repo: "{{ app_repo }}"
+        dest: "{{ app_dir }}"
+        version: main
+
+    - name: Install application dependencies
+      npm:
+        path: "{{ app_dir }}"
+        state: present
+
+    - name: Build the application
+      command: npm run build
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Configure Nginx
+      copy:
+        dest: /etc/nginx/sites-available/{{ app_name }}
+        content: |
+          server {
+              listen 80;
+              server_name _;
+              root {{ app_dir }}/build;
+              index index.html;
+              location / {
+                  try_files $uri /index.html;
+              }
+          }
+
+    - name: Enable Nginx site
+      file:
+        src: /etc/nginx/sites-available/{{ app_name }}
+        dest: /etc/nginx/sites-enabled/{{ app_name }}
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
