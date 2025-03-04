@@ -20,4 +20,4 @@ This project is licensed under the MIT License.
 
 ### Test Changes
 
-This is some changes
+This section outlines the test changes.
